@@ -1,0 +1,108 @@
+diff --git a/REINFORCEcontinuous.py b/REINFORCEcontinuous.py
+index 4a0e5df..c53fc12 100644
+--- a/REINFORCEcontinuous.py
++++ b/REINFORCEcontinuous.py
+@@ -7,7 +7,7 @@ import torch.optim as optim
+ import torch.nn.functional as F
+ import matplotlib.pyplot as plt
+ 
+-env = gym.make("HalfCheetah-v5",max_episode_steps=200,render_mode=None,)
++env = gym.make("Ant-v5",max_episode_steps=500,render_mode=None,)
+ state_dim = env.observation_space.shape[0]
+ action_dim = env.action_space.shape[0]
+ actions_low = torch.tensor(env.action_space.low)
+@@ -104,7 +104,7 @@ class ReinforceContinuous():
+ 
+ 
+ 
+-    def train(self,episodes = 500):
++    def train(self,episodes = 1000):
+         eval_GG = []
+         srw = []
+         for i in range(episodes):
+@@ -141,7 +141,7 @@ class ReinforceContinuous():
+             self.optimizer.step()
+             u = sum(rewards)
+             srw.append(round(float(u),2))
+-            eval_GG.append(self.eval(gym.make("HalfCheetah-v5",max_episode_steps=200,render_mode=None),episodes=5))
++            eval_GG.append(self.eval(gym.make("Ant-v5",max_episode_steps=200,render_mode=None),episodes=5))
+             print(f"Episode {i}: {u:.2f}, in {perf_counter()-tin:.2f}s")
+         return srw, eval_GG
+ 
+diff --git a/TRPO.py b/TRPO.py
+index 9e89856..2615225 100644
+--- a/TRPO.py
++++ b/TRPO.py
+@@ -13,6 +13,7 @@ import torch.optim as optim
+ from torch.distributions.normal import Normal
+ from torch.distributions.kl import kl_divergence
+ from torch.utils.tensorboard import SummaryWriter
++from gymnasium import spaces
+ 
+ 
+ def parse_args():
+@@ -88,7 +89,19 @@ def make_env(env_id, idx, capture_video, run_name, gamma):
+                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+         env = gym.wrappers.ClipAction(env)
+         env = gym.wrappers.NormalizeObservation(env)
+-        env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
++        # Thêm clipping và cung cấp observation_space mới:
++        orig_space = env.observation_space
++        clipped_space = spaces.Box(
++            low=-10.0,
++            high=10.0,
++            shape=orig_space.shape,
++            dtype=orig_space.dtype
++        )
++        env = gym.wrappers.TransformObservation(
++            env,
++            func=lambda obs: np.clip(obs, -10, 10),
++            observation_space=clipped_space
++        )
+         env = gym.wrappers.NormalizeReward(env, gamma=gamma)
+         env = gym.wrappers.TransformReward(env, lambda reward: np.clip(reward, -10, 10))
+         return env
+@@ -239,6 +252,8 @@ if __name__ == "__main__":
+ 
+     actor = Actor(envs).to(device)
+     critic = Critic(envs).to(device)
++    wandb.watch(actor,  log="all", log_freq=100)
++    wandb.watch(critic, log="all", log_freq=100)
+     optimizer_critic = optim.Adam(critic.parameters(), lr=args.learning_rate, eps=1e-5)
+ 
+     # ALGO Logic: Storage setup
+@@ -411,6 +426,33 @@ if __name__ == "__main__":
+                 if filename not in video_filenames and filename.endswith(".mp4"):
+                     wandb.log({f"videos": wandb.Video(f"videos/{run_name}/{filename}")})
+                     video_filenames.add(filename)
++        if args.track:
++            import wandb
++            import os
++            # === SAVE & UPLOAD ACTOR/CRITIC STATE_DICT ===
++            # mỗi save_every updates hoặc cuối training thì lưu checkpoint và log artifact
++            save_every = 1000  # bạn có thể đổi giá trị này
++            if args.track and (update % save_every == 0 or update == num_updates):
++                # Lưu local
++                actor_path  = f"actor_step{update}.pt"
++                critic_path = f"critic_step{update}.pt"
++                torch.save(actor.state_dict(),  actor_path)
++                torch.save(critic.state_dict(), critic_path)
++
++                # Tạo artifact và đẩy lên W&B
++                artifact = wandb.Artifact(
++                    name=f"{run_name}-step{update}",
++                    type="model",
++                    description="TRPO actor & critic weights"
++                )
++                artifact.add_file(actor_path)
++                artifact.add_file(critic_path)
++                wandb.log_artifact(artifact)
++
++                # (tuỳ chọn) xóa file local sau khi upload
++                os.remove(actor_path)
++                os.remove(critic_path)
++
+ 
+     envs.close()
+     writer.close()
+\ No newline at end of file

@@ -1,0 +1,60 @@
+{
+  "os":  "Linux-6.14.0-24-generic-x86_64-with-glibc2.39",
+  "python":  "CPython 3.10.18",
+  "startedAt":  "2025-07-25T17:34:41.580057Z",
+  "args":  [
+    "--env-id",
+    "HalfCheetah-v4",
+    "--exp-name",
+    "num_env_2",
+    "--seed",
+    "1",
+    "--num-envs",
+    "2",
+    "--total-timesteps",
+    "1000000",
+    "--capture-video",
+    "True",
+    "--track",
+    "True",
+    "--wandb-project-name",
+    "cleanRL",
+    "--wandb-entity",
+    "kieusontung8-hanoi-university-of-science-and-technology"
+  ],
+  "program":  "/home/tung/practice-gymnasium/TRPO.py",
+  "codePath":  "TRPO.py",
+  "codePathLocal":  "TRPO.py",
+  "git":  {
+    "remote":  "https://github.com/sontungkieu/practice-gymnasium.git",
+    "commit":  "6bb7058d154b6b8e6e23f74963a053e008156145"
+  },
+  "email":  "kieusontung8@gmail.com",
+  "root":  "/home/tung/practice-gymnasium",
+  "host":  "tung-Legion-Y540-15IRH-PG0",
+  "executable":  "/home/tung/miniforge3/envs/gym/bin/python",
+  "cpu_count":  4,
+  "cpu_count_logical":  8,
+  "gpu":  "NVIDIA GeForce GTX 1650",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "124142673920",
+      "used":  "104135254016"
+    }
+  },
+  "memory":  {
+    "total":  "16676139008"
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA GeForce GTX 1650",
+      "memoryTotal":  "4294967296",
+      "cudaCores":  1024,
+      "architecture":  "Turing",
+      "uuid":  "GPU-3498bf86-ab1e-f415-286e-ab37887ee2c0"
+    }
+  ],
+  "cudaVersion":  "12.8",
+  "writerId":  "qef2uy8hmkay13fxfevcg5jojzc07022"
+}

@@ -7,7 +7,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-env = gym.make("HalfCheetah-v5",max_episode_steps=200,render_mode=None,)
+env = gym.make("Ant-v5",max_episode_steps=500,render_mode=None,)
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
 actions_low = torch.tensor(env.action_space.low)
@@ -104,7 +104,7 @@ class ReinforceContinuous():
 
 
 
-    def train(self,episodes = 500):
+    def train(self,episodes = 1000):
         eval_GG = []
         srw = []
         for i in range(episodes):
@@ -141,7 +141,7 @@ class ReinforceContinuous():
             self.optimizer.step()
             u = sum(rewards)
             srw.append(round(float(u),2))
-            eval_GG.append(self.eval(gym.make("HalfCheetah-v5",max_episode_steps=200,render_mode=None),episodes=5))
+            eval_GG.append(self.eval(gym.make("Ant-v5",max_episode_steps=200,render_mode=None),episodes=5))
             print(f"Episode {i}: {u:.2f}, in {perf_counter()-tin:.2f}s")
         return srw, eval_GG
 
