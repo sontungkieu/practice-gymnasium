@@ -76,6 +76,37 @@ def parse_args():
     return args
 
 
+# def make_env(env_id, idx, capture_video, run_name, gamma):
+#     def thunk():
+#         if capture_video:
+#             env = gym.make(env_id, render_mode="rgb_array")
+#         else:
+#             env = gym.make(env_id)
+#         env = gym.wrappers.FlattenObservation(env)  # deal with dm_control's Dict observation space
+#         env = gym.wrappers.RecordEpisodeStatistics(env)
+#         if capture_video:
+#             if idx == 0:
+#                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+#         env = gym.wrappers.ClipAction(env)
+#         env = gym.wrappers.NormalizeObservation(env)
+#         # Thêm clipping và cung cấp observation_space mới:
+#         orig_space = env.observation_space
+#         clipped_space = spaces.Box(
+#             low=-10.0,
+#             high=10.0,
+#             shape=orig_space.shape,
+#             dtype=orig_space.dtype
+#         )
+#         env = gym.wrappers.TransformObservation(
+#             env,
+#             func=lambda obs: np.clip(obs, -10, 10),
+#             observation_space=clipped_space
+#         )
+#         env = gym.wrappers.NormalizeReward(env, gamma=gamma)
+#         env = gym.wrappers.TransformReward(env, lambda reward: np.clip(reward, -10, 10))
+#         return env
+
+#     return thunk
 def make_env(env_id, idx, capture_video, run_name, gamma):
     def thunk():
         if capture_video:
@@ -89,24 +120,13 @@ def make_env(env_id, idx, capture_video, run_name, gamma):
                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         env = gym.wrappers.ClipAction(env)
         env = gym.wrappers.NormalizeObservation(env)
-        # Thêm clipping và cung cấp observation_space mới:
-        orig_space = env.observation_space
-        clipped_space = spaces.Box(
-            low=-10.0,
-            high=10.0,
-            shape=orig_space.shape,
-            dtype=orig_space.dtype
-        )
-        env = gym.wrappers.TransformObservation(
-            env,
-            func=lambda obs: np.clip(obs, -10, 10),
-            observation_space=clipped_space
-        )
+        env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
         env = gym.wrappers.NormalizeReward(env, gamma=gamma)
         env = gym.wrappers.TransformReward(env, lambda reward: np.clip(reward, -10, 10))
         return env
 
     return thunk
+
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.orthogonal_(layer.weight, std)
