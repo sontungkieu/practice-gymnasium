@@ -14,6 +14,8 @@ from torch.distributions.normal import Normal
 from torch.distributions.kl import kl_divergence
 from torch.utils.tensorboard import SummaryWriter
 from gymnasium import spaces
+import wandb
+
 
 
 def parse_args():
@@ -239,7 +241,6 @@ if __name__ == "__main__":
     args = parse_args()
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     if args.track:
-        import wandb
 
         wandb.init(
             project=args.wandb_project_name,
