@@ -78,7 +78,6 @@ def parse_args():
     # fmt: on
     return args
 
-print(gym.__version__)
 
 def make_env(env_id, idx, capture_video, run_name, gamma):
     def thunk():
@@ -93,7 +92,7 @@ def make_env(env_id, idx, capture_video, run_name, gamma):
                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         env = gym.wrappers.ClipAction(env)
         env = gym.wrappers.NormalizeObservation(env)
-        if version.parse(gym.__version__)>=version.parse("0.27.0"):
+        if version.parse(gym.__version__)>=version.parse("1.0.0"):
             # Thêm clipping và cung cấp observation_space mới:
             orig_space = env.observation_space
             clipped_space = spaces.Box(
