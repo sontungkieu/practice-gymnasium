@@ -57,7 +57,6 @@ def run(episodes, is_training = True, render = False):
         if epsilon == 0:
             learning_rate_a = 0.0001
         
-        # if reward == 1:
         reward_per_episode[_] = rewards
 
     env.close()

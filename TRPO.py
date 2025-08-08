@@ -197,6 +197,13 @@ class Actor(nn.Module):
         probs = Normal(action_mean, action_std)
         if action is None:
             action = probs.sample()
+            # print(action.shape)
+            # exit()
+        # else:
+        #     print(action.shape)
+        # b_actions = actions.reshape((-1,) + envs.single_action_space.shape)
+        # print(action.shape)
+        # flatten_action = action.reshape(-1)
         return action, probs.log_prob(action).sum(1), probs.entropy().sum(1)
 
     def forward(self, x):
@@ -257,8 +264,9 @@ if __name__ == "__main__":
 
     actor = Actor(envs).to(device)
     critic = Critic(envs).to(device)
-    wandb.watch(actor,  log="all", log_freq=100)
-    wandb.watch(critic, log="all", log_freq=100)
+    if args.track:
+        wandb.watch(actor,  log="all", log_freq=100)
+        wandb.watch(critic, log="all", log_freq=100)
     optimizer_critic = optim.Adam(critic.parameters(), lr=args.learning_rate, eps=1e-5)
 
     # ALGO Logic: Storage setup
@@ -300,7 +308,7 @@ if __name__ == "__main__":
             # TRY NOT TO MODIFY: execute the game and log data.
             next_obs, reward, terminated, truncated, infos = envs.step(action.cpu().numpy())
             done = np.logical_or(terminated, truncated)
-            rewards[step] = torch.tensor(reward).to(device).view(-1)
+            rewards[step] = torch.tensor(reward).to(device).view(-1) # flatten but shape = (2) 
             next_obs, next_done = torch.Tensor(next_obs).to(device), torch.Tensor(done).to(device)
 
             # Only print when at least 1 env is done
@@ -318,7 +326,7 @@ if __name__ == "__main__":
         # bootstrap value if not done
         with torch.no_grad():
             next_value = critic.get_value(next_obs).reshape(1, -1)
-            advantages = torch.zeros_like(rewards).to(device)
+            advantages = torch.zeros_like(rewards).to(device) # advantage have same shape of rewards => flatten (n,2)
             lastgaelam = 0
             for t in reversed(range(args.num_steps)):
                 if t == args.num_steps - 1:
@@ -329,11 +337,11 @@ if __name__ == "__main__":
                     nextvalues = values[t + 1]
                 delta = rewards[t] + args.gamma * nextvalues * nextnonterminal - values[t]
                 advantages[t] = lastgaelam = delta + args.gamma * args.gae_lambda * nextnonterminal * lastgaelam
-            returns = advantages + values
+            returns = advantages + values #(n,2) + (n,2)
 
         # flatten the batch
-        b_obs = obs.reshape((-1,) + envs.single_observation_space.shape)
-        b_logprobs = logprobs.reshape(-1)
+        b_obs = obs.reshape((-1,) + envs.single_observation_space.shape) #shape?
+        b_logprobs = logprobs.reshape(-1) #(n,2)
         b_actions = actions.reshape((-1,) + envs.single_action_space.shape)
         b_advantages = advantages.reshape(-1)
         b_returns = returns.reshape(-1)
@@ -345,9 +353,11 @@ if __name__ == "__main__":
         actor_lrs = []
         for epoch in range(args.update_epochs):
             np.random.shuffle(b_inds)
-            for start in range(0, args.batch_size, args.minibatch_size):
+            for start in range(0, args.batch_size, args.minibatch_size): #args.minibatch_size = args.batch_size
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
+                # print("b_actions[mb_inds].shape",b_actions[mb_inds].shape)
+                # print("actions[mb_inds].shape",actions[mb_inds].shape)
 
                 _, newlogprob, entropy = actor.get_action(b_obs[mb_inds], b_actions[mb_inds])
                 newvalue = critic.get_value(b_obs[mb_inds])
@@ -392,7 +402,7 @@ if __name__ == "__main__":
                     _, newlogprob, entropy = actor.get_action(b_obs[mb_inds], b_actions[mb_inds])
                     logratio = newlogprob - b_logprobs[mb_inds]
                     ratio = logratio.exp()
-                    new_pg_loss = (advantages[mb_inds] * ratio).mean()
+                    new_pg_loss = (mb_advantages * ratio).mean()
                     loss_improve = new_pg_loss - pg_loss
                     expected_improve *= fraction
                     kl = kl_divergence(old_actor(b_obs[mb_inds]), actor(b_obs[mb_inds])).mean()
